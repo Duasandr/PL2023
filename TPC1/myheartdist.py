@@ -30,11 +30,11 @@ class MyHeartDist:
     @classmethod
     def add(cls, patient: Patient) -> None:
         """
-        Adds patient info to the distribution.
-
         :param patient: Patient object. Holds information to update distribution.
         :return: None.
         :raises TypeError: Patient object is mandatory.
+
+        Adds patient info to the distribution.
 
         Important:
         ---------

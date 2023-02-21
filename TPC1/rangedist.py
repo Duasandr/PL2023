@@ -9,9 +9,33 @@ class RangedDist(MyHeartDist):
 
     @classmethod
     def get_level(cls, patient) -> int:
+        """
+        :param patient: Patient information is used to compute the range level.
+        :return: Level index.
+
+        Returns the level index of a given patient.
+
+        Example:
+
+        Levels: [ [ 0-9 ] , [ 10-19 ]
+        \t getLevel(8) -> 0\n
+        \t getLevel(13) -> 1
+        """
         pass
 
     def get_key(self, patient):
+        """
+        :param patient: Patient information.
+        :return: Valid key.
+
+        Generates a valid key from patient information. The key represents the appropriate level.
+
+        Example:
+            * levels: [ [ 0-9 ], [ 10-19 ] ]
+            * get_level(patient) -> 1
+            * xStep = 10
+            * get_key(patient) -> "[10-19]"
+        """
         return f"[{self.get_level(patient)*self.xStep}-{self.get_level(patient)*self.xStep+self.xStep-1}]"
 
     def plot_graph(self):
@@ -19,6 +43,7 @@ class RangedDist(MyHeartDist):
             self.dict = dict(sorted(self.dict.items()))
             self.isSorted = True
 
+        # flips chart so labels can be read properly with many levels
         if len(self.dict) > 10:
             plt.xlabel(self.get_y_label())
             plt.ylabel(self.get_x_label())

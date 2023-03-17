@@ -1,45 +1,69 @@
 import re
 import sys
 import json
+from string_column import CSVStringColumn
+from list_column import CSVListColumn
 
 
-def make_csv_row_re(column_names: list[str]) -> re.Pattern:
-    pattern = ''
+def make_columns(columns, headers, list_re):
+    column_index = 0
+    for header in headers:
 
-    for group_name in column_names[:len(column_names) - 2]:
-        if group_name != "":
-            pattern += f'(?P<{group_name}>' + r'\w+)[,|;]+'
-    pattern += f'(?P<{column_names[len(column_names) - 2]}>' + r'\w+)(?=\n)*'
+        if header != "":
+            re_res = list_re.match(header)
 
-    return re.compile(pattern)
+            if re_res:
+                column = CSVListColumn(re_res.group('name'),
+                                       column_index,
+                                       re_res.group('min'),
+                                       re_res.group('max'),
+                                       re_res.group('func'))
+            else:
+                column = CSVStringColumn(header, column_index)
+
+            columns.append(column)
+            column_index += 1
+
+
+def make_json(columns, rows):
+    """
+    Reads all rows and applies a column variable to extract values to a json list of dictionaries
+    :param columns:
+    :param rows:
+    :return:
+    """
+    json_data = []
+    for row in rows[1:]:
+        # removes new line
+        values = re.split(r',', re.sub(r'\n', "", row))
+
+        dic = {}
+        for column in columns:
+            # parses a column
+            dic[column.get_name()] = column.get_value(values)
+
+        json_data.append(dic)
+    return json_data
 
 
 def main():
-    csv_lines = sys.stdin.readlines()
+    list_re = re.compile(r'(?P<name>\w+){(?P<min>\d+)(,(?P<max>\d+))?}(::(?P<func>\w+))?')
+    # negative look behind. fails when a digit is present before a ','
+    csv_delim = re.compile(r'(?<!\d),')
 
-    csv_header = csv_lines[0]
+    rows = sys.stdin.readlines()
 
-    csv_delim = re.compile(r'[,|;]')
-    list_re = re.compile(r'\w+{\d+(,\d+)?}')
+    # splits and removes new line
+    headers = csv_delim.split(re.sub(r'\s', "", rows[0]))
 
-    csv_header = re.sub('\n', '', csv_header)
-    column_names = csv_delim.split(csv_header)
-    print(csv_header)
+    columns = []
 
-    data = []
+    make_columns(columns, headers, list_re)
 
-    for csv_line in csv_lines[1:]:
-        csv_line = re.sub('\n', '', csv_header)
-        column_values = csv_delim.split(csv_line)
+    json_data = make_json(columns, rows)
 
-        if len(column_values) == len(column_names):
-            dic = {}
-            for i in range(len(column_names)):
-                dic[column_names[i]] = column_values[i]
-            data.append(dic)
-
-    file = open("data.json", "w")
-    json.dump(data, file, ensure_ascii=False, indent=4)
+    file = open('data.json', 'w')
+    json.dump(json_data, file, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":
